@@ -3,6 +3,12 @@ name = "material_color"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
+edition = "2021"
+authors = ["deotime"]
+description = "Crate for using material color designs"
+repository = "https://github.com/DeoTimeTheGithubUser/material_color"
+license = "MIT"
+keywords = ["color", "gradient"]
 
 [dependencies]
 lazy_static = "1.4.0"
