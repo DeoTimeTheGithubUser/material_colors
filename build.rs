@@ -63,7 +63,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }}
 
                 lazy_static! {{
-                    #[allow(non_upper_case_globals)]
                     static ref _{hue}S500: Color = {hue}::S500;
                 }}
 
@@ -99,8 +98,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     "#
     );
 
-    std::fs::write(output, generated_mod)?;
+
+    let file = syn::parse_file(&generated_mod)?;
+    std::fs::write(output, prettyplease::unparse(&file))?;
 
     println!("cargo:rustc-env=GENERATED_HUES={OUTPUT_FILE}");
+    println!("cargo:rustc-cfg=generated_hues");
     Ok(())
 }
