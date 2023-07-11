@@ -6,14 +6,14 @@ use std::path::Path;
 use anyhow::anyhow;
 use serde_json::Value;
 
-// it would have been SO much easier to just manually write these impls
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    const OUTPUT_FILE: &str = "hue_impls.rs";
+
     fn bad_json() -> anyhow::Error {
         anyhow!("bad material_data.json data")
     }
 
-    let output = Path::new(&env::var("OUT_DIR")?).join("hue_impls.rs");
-
+    let output = Path::new(&env::var("OUT_DIR")?).join(OUTPUT_FILE);
     let material_data: Value = serde_json::from_str(include_str!("material_data.json"))?;
 
     let shades = &material_data["Red"]
@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .keys()
         .collect::<Vec<_>>();
 
-    let colors = &material_data
+    let hues = &material_data
         .as_object()
         .ok_or_else(bad_json)?
         .iter()
@@ -30,47 +30,77 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<HashMap<_, _>>();
 
     let mut generated = String::new();
-    for shade in shades {
-        let mut match_arms = String::new();
-        for (color, values) in colors.iter() {
-            let Some(hex) = values.get(*shade) else { continue };
-            let hex = hex.as_str().ok_or_else(bad_json)?.strip_prefix('#').ok_or_else(bad_json)?;
-            writeln!(match_arms, r#"Hue::{color} => 0x{},"#, hex)?;
-        }
-        writeln!(match_arms, r#"_ => 0x0"#)?;
+    for (hue, values) in hues.iter() {
+        let mut consts = String::new();
+        for shade in shades {
+            let shade_name = if shade.starts_with(|c: char| c.is_ascii_digit()) {
+                format!("S{shade}")
+            } else {
+                shade.to_ascii_uppercase()
+            };
 
-        let shade_name = if shade.starts_with(|c: char| c.is_ascii_digit()) {
-            format!("S{shade}")
-        } else {
-            shade.to_ascii_uppercase()
-        };
+            let hex = values
+                .get(*shade)
+                .and_then(|h| h.as_str())
+                .unwrap_or("#0")
+                .strip_prefix('#')
+                .ok_or_else(bad_json)?;
+
+            writeln!(
+                consts,
+                r#"const {shade_name}: Color = Color::from_hex(0x{hex});"#
+            )?;
+        }
+
         writeln!(
             generated,
             r#"
-            impl From<Hue<{shade_name}>> for Color {{
-                fn from(value: Hue<{shade_name}>) -> Self {{
-                    let hex = match value {{
-                        {match_arms}
-                    }};
-                    Color {{ hex }};
+
+                pub struct {hue};
+
+                impl Hue for {hue} {{
+                    {consts}
                 }}
-            }}
-        "#
+
+                lazy_static! {{
+                    #[allow(non_upper_case_globals)]
+                    static ref _{hue}S500: Color = {hue}::S500;
+                }}
+
+                impl Deref for {hue} {{
+                    type Target = Color;
+
+                    fn deref(&self) -> &'static Self::Target {{
+                        &_{hue}S500
+                    }}
+                }}
+
+                impl private::Sealed for {hue} {{}}
+            "#
         )?;
     }
 
-    let generated_mod = format!(r#"
-        #[doc(hidden)]
-        pub mod impls {{
+    let generated_mod = format!(
+        r#"
+        #[allow(non_upper_case_globals)]
+        mod impls {{
+            use super::private;
+            use std::ops::Deref;
             use crate::hue::Hue;
             use crate::color::Color;
-            use crate::shade::*;
+            use lazy_static::lazy_static;
 
             {generated}
         }}
-    "#);
+
+        pub use impls::*;
+
+
+    "#
+    );
 
     std::fs::write(output, generated_mod)?;
 
+    println!("cargo:rustc-env=GENERATED_HUES={OUTPUT_FILE}");
     Ok(())
 }
