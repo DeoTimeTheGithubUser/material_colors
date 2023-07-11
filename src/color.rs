@@ -14,6 +14,10 @@ impl Color {
         Self::from_hex(((r as u32) << 16) + ((g as u32) << 8) + (b as u32))
     }
 
+    pub const fn hex(&self) -> u32 {
+        self.hex
+    }
+
     pub const fn r(&self) -> u8 {
         ((self.hex << 16) & 0xFF) as u8
     }

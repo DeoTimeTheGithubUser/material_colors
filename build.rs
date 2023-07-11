@@ -98,7 +98,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     "#
     );
 
-
     let file = syn::parse_file(&generated_mod)?;
     std::fs::write(output, prettyplease::unparse(&file))?;
 
