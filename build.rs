@@ -7,7 +7,7 @@ use anyhow::anyhow;
 use serde_json::Value;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    const OUTPUT_FILE: &str = "hue_impls.rs";
+    const OUTPUT_FILE: &str = "generated_hues.rs";
 
     fn bad_json() -> anyhow::Error {
         anyhow!("bad material_data.json data")
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .as_object()
         .ok_or_else(bad_json)?
         .iter()
-        .map(|(k, v)| (k, v.as_object().unwrap())) // todo no unwrap
+        .map(|(k, v)| (k, v))
         .collect::<HashMap<_, _>>();
 
     let mut generated = String::new();
@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             writeln!(
                 consts,
-                r#"const {shade_name}: Color = Color::from_hex(0x{hex});"#
+                r#"const {shade_name}: Color = Color {{ hex: 0x{hex} }};"#
             )?;
         }
 
@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let generated_mod = format!(
         r#"
         #[allow(non_upper_case_globals)]
-        mod impls {{
+        mod generated {{
             use super::private;
             use std::ops::Deref;
             use crate::hue::Hue;
@@ -93,7 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             {generated}
         }}
 
-        pub use impls::*;
+        pub use generated::*;
 
 
     "#

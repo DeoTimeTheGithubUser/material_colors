@@ -1,20 +1,15 @@
-use std::ops::Index;
-use serde::{Deserialize, Serialize};
 use crate::color::Color;
-use crate::hue::Black;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gradient {
-    pub stops: Vec<Color>
+    pub stops: Vec<Color>,
 }
 
 impl Gradient {
     pub const fn new(stops: Vec<Color>) -> Self {
         Gradient { stops }
     }
-
-
-
 }
 
 impl<const N: usize> From<[Color; N]> for Gradient {
@@ -26,10 +21,19 @@ impl<const N: usize> From<[Color; N]> for Gradient {
 #[macro_export]
 macro_rules! gradient {
     ($($color:expr),*) => {{
-        let v = vec![];
-        $(
-        v.push($color.into());
-        )*
-        $crate::gradient::Gradient::new(v)
+        $crate::gradient::Gradient::from([$($color.into()),*])
     }};
+}
+
+#[cfg(feature = "colorgrad")]
+impl From<Gradient> for colorgrad::Gradient {
+    fn from(value: Gradient) -> Self {
+        let colors: Vec<colorgrad::Color> =
+            value.stops.iter().map(colorgrad::Color::from).collect();
+
+        colorgrad::CustomGradient::new()
+            .colors(colors.as_slice())
+            .build()
+            .expect("Failed to build gradient.") // should not ever fail
+    }
 }
