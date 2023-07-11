@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let hex = values
                 .get(*shade)
+                .or(values.get("_"))
                 .and_then(|h| h.as_str())
                 .unwrap_or("#0")
                 .strip_prefix('#')
