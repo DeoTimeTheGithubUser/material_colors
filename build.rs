@@ -63,15 +63,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     {consts}
                 }}
 
-                lazy_static! {{
-                    static ref _{hue}S500: Color = {hue}::S500;
-                }}
-
                 impl Deref for {hue} {{
                     type Target = Color;
 
                     fn deref(&self) -> &'static Self::Target {{
-                        &_{hue}S500
+                        &Self::S500
                     }}
                 }}
 
@@ -88,7 +84,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             use std::ops::Deref;
             use crate::hue::Hue;
             use crate::color::Color;
-            use lazy_static::lazy_static;
 
             {generated}
         }}
