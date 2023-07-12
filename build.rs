@@ -32,6 +32,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut generated = String::new();
     for (hue, values) in hues.iter() {
         let mut consts = String::new();
+
+        writeln!(consts, r#"const NAME: &'static str = "{hue}";"#)?;
+
         for shade in shades {
             let shade_name = if shade.starts_with(|c: char| c.is_ascii_digit()) {
                 format!("S{shade}")

@@ -3,6 +3,8 @@ use std::ops::Deref;
 use crate::color::Color;
 
 pub trait Hue: Deref<Target = Color> + private::Sealed {
+    const NAME: &'static str;
+
     const S50: Color;
     const S100: Color;
     const S200: Color;
